@@ -1,0 +1,104 @@
+<html>
+  <head>
+    <style>
+      :root {
+        box-sizing: border-box;
+      }
+      *,
+      ::before,
+      ::after {
+        box-sizing: inherit;
+      }
+
+      .container {
+        width: 80%;
+        margin: auto;
+        /* background-color: antiquewhite; */
+      }
+
+      .question-form {
+        position: relative;
+      }
+
+      button {
+        cursor: pointer;
+        background-color: orange;
+        padding: 1em;
+        padding-left: 1.5em;
+        padding-right: 1.5em;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 1em;
+      }
+
+      .text-area {
+        background-color: azure;
+        margin-top: 1em;
+      }
+
+      .text-input {
+        background-color: aquamarine;
+        width: 100%;
+        padding: 1em;
+        font-size: large;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="question-form">
+        <form>
+          <input class="text-input" type="text" id="text-input" />
+        </form>
+        <button id="submit">Submit</button>
+      </div>
+      <div class="text-area">
+        <p id="story-output"></p>
+      </div>
+    </div>
+    <script>
+      const storyOutput = document.getElementById("story-output");
+
+      const callBedrockStream = async () => {
+        storyOutput.innerText = "";
+
+        const topic = document.getElementById("text-input").value;
+
+        if (topic) {
+          try {
+            const response = await fetch("/bedrock-stream", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ topic: topic }),
+            });
+
+            console.log(response);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                break;
+              }
+              const text = decoder.decode(value);
+              console.log(text);
+              storyOutput.innerText += text;
+            }
+          } catch (error) {
+            console.log(error);
+          }
+        } else {
+          console.log("Please enter question ...");
+        }
+      };
+
+      document
+        .getElementById("submit")
+        .addEventListener("click", callBedrockStream);
+    </script>
+  </body>
+</html>
