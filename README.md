@@ -116,7 +116,7 @@ sudo su ec2-user
 cd /home/ec2-user/
 wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
 tar -xvf go1.21.5.linux-amd64.tar.gz
-echo exoprt PATH:/home/ec2-user/go/bin/go:$PATH >> ~/.bashrc
+echo 'export PATH=/home/ec2-user/go/bin/go:$PATH' >> ~/.bashrc
 
 wget https://github.com/cdk-entest/swinburne-dn-cos20019/archive/refs/heads/main.zip
 unzip main
