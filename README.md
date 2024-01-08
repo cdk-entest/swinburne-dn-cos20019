@@ -112,8 +112,16 @@ go run main.go
 UserData can be used when launching a new EC2 instance, so it will install GO and clone the repository for the web app
 
 ```bash
+cd /home/ec2-user/
 wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
 tar -xvf go1.21.5.linux-amd64.tar.gz
+echo PATH:/home/ec2-user/go/bin/go:PATH >> ~/.bashrc
+
+wget https://github.com/cdk-entest/swinburne-dn-cos20019/archive/refs/heads/main.zip
+unzip main
+cd swinburne-dn-cos20019-main/
+go mod tidy
+go run main.go
 ```
 
 ## Reference
