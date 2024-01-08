@@ -23,7 +23,7 @@ tar -xvzf go1.21.5.linux-amd64.tar.gz
 Next update the PATH environment
 
 ```bash
-echo PATH:PATH_TO_YOUR_GO/go/bin/go:PATH >> ~/.bashrc
+echo export PATH=/home/ec2-user/go/bin:$PATH >> ~/.bashrc
 ```
 
 Finally, check go version
