@@ -1,257 +1,100 @@
----
-title: build a web app using golang
-description: build a web app using golang
-author: haimtran
-publishedDate: 01/05/2024
-date: 2024-01-05
----
-
-## Install Go
-
-First, download go from [HERE](https://go.dev/dl/). For Linux, we can use below command to download a version of Go
-
-```bash
-wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
-```
-
-Second, extract
-
-```bash
-tar -xvzf go1.21.5.linux-amd64.tar.gz
-```
-
-Next update the PATH environment
-
-```bash
-echo export PATH=/home/ec2-user/go/bin:$PATH >> ~/.bashrc
-```
-
-Finally, check go version
-
-```bash
-go version
-```
-
-## Hello World
-
-Let create a new folder called hello
-
-```bash
-mkdir helloworld
-```
-
-Go into the folder helloworld and init a new go module
-
-```bash
-go module init hellomodule
-```
-
-Then create a main.go, the project structure look like this
-
-```
-|--hello
-   |--go.mod
-   |--go.sum
-   |--main.go
-```
-
-Content of main.go
-
-```go
-package main
-
-import (
-    "fmt"
-)
-
-func main() {
-    fmt.Println("Hello World")
-}
-```
-
-Run the code
-
-```bash
-go run main.go
-```
-
-## Web App
-
-Let create a web app
-
-- Bedrock stream response
-- Book static page
-- Upload page
-
-Project structure updated
-
-```
-|--go.mod
-|--go.sum
-|--main.go
-|--static
-   |--bedrock.html
-   |--upload.html
-   |--book.html
-```
-
-Install dependencies
-
-```bash
-go mod tidy
-```
-
-Run the web server
-
-```bash
-go run main.go
-```
-
-## UserData
-
-UserData can be used when launching a new EC2 instance, so it will install GO and clone the repository for the web app
-
-```bash
-sudo su ec2-user
-cd /home/ec2-user/
-wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
-tar -xvf go1.21.5.linux-amd64.tar.gz
-echo 'export PATH=/home/ec2-user/go/bin:$PATH' >> ~/.bashrc
-
-wget https://github.com/cdk-entest/swinburne-dn-cos20019/archive/refs/heads/main.zip
-unzip main
-cd swinburne-dn-cos20019-main/
-go mod tidy
-go run main.go
-```
-
-## PostgreSQL
-
-Let connect to a postgresql. Default username could be postgres or postgresql.
-
-```bash
-psql -h $HOST -p 5432 -U postgres -d demo
-```
-
-Create a database and table
-
-```sql
-create database demo;
-\c demo;
-```
-
-Create a book table
-
-```sql
-CREATE TABLE IF NOT EXISTS book (
-  id serial PRIMARY KEY,
-  author TEXT,
-  title TEXT,
-  amazon TEXT,
-  image TEXT
-);
-```
-
-Insert data into table
-
-```sql
-INSERT INTO book (author, title, amazon, image)
-values ('Hai Tran', 'Deep Learning', '', 'dog.jpg') RETURNING id;
-```
-
-## PostgreSQL and GORM
-
-Create a database connection
-
-```go
-const HOST = "localhost"
-const USER = "postgres"
-const DBNAME = "dvdrental"
-const PASS = "Mike@865525"
-
-dns := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v", HOST, "5432", USER, PASS, DBNAME)
-	db, _ := gorm.Open(postgres.Open(dns), &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{
-			NoLowerCase:   false,
-			SingularTable: true,
-		},
-	})
-
-mux.HandleFunc("/postgresql", func(w http.ResponseWriter, r *http.Request) {
-
-		// query a list of book []Book
-		books := getBooks(db)
-
-		// load template
-		tmpl, error := template.ParseFiles("./static/book-template.html")
-
-		if error != nil {
-			fmt.Println(error)
-		}
-
-		// pass data to template and write to writer
-		tmpl.Execute(w, books)
-	})
-```
-
-Query database using an Object Relation Model (ORM) such as GORM
-
-```go
-func getBooks(db *gorm.DB) []Book {
-	var books []Book
-
-	db.Limit(10).Find(&books)
-
-	for _, book := range books {
-		fmt.Println(book.Title)
-	}
-
-	return books
-}
-```
-
-Pass books to frontend template
-
-```html
-<div class="grid">
-  {{range $book:= .}}
-  <div class="card">
-    <h4 class="title">{{ $book.Image}}</h4>
-    <h4 class="title">{{ $book.Author }}</h4>
-    <img src="/demo/{{ $book.Image }}" alt="book-image" class="image" />
-    <p>
-      Lorem ipsum dolor sit amet consectetur, adipisicing elit. Rem quaerat quas
-      corrupti cum blanditiis, sint non officiis minus molestiae culpa
-      consectetur ex voluptatibus distinctio ipsam. Possimus sint voluptatum at
-      modi! Lorem ipsum, dolor sit amet consectetur adipisicing elit. Alias
-      dolore soluta error adipisci eius pariatur laborum sed impedit. Placeat
-      minus aut perspiciatis dolor veniam, dolores odio sint eveniet? Numquam,
-      tenetur! Lorem ipsum dolor sit amet consectetur adipisicing elit. Earum
-      suscipit porro animi! Ducimus maiores et non. Minima nostrum ipsa voluptas
-      assumenda consequuntur dicta reprehenderit numquam similique, nesciunt
-      officiis facere optio. {{ $book.Description}}
-    </p>
-  </div>
-  {{end}}
-</div>
-```
-
-Upload a file and create a record in the database
-
-```go
-// create a record in database
-	db.Create(&Book{
-		Title:       "Database Internals",
-		Author:      "Hai Tran",
-		Description: "Hello",
-		Image:       handler.Filename,
-	})
-```
-
-## Reference
-
-- [golang http doc](https://go.dev/src/net/http/doc.go)
-
-- [golang net/http package](https://pkg.go.dev/net/http)
-
-- [download and install golang](https://go.dev/doc/install)
+<html>
+
+<head>
+  <style>
+    :root {
+      box-sizing: border-box;
+    }
+
+    *,
+    ::before,
+    ::after {
+      box-sizing: inherit;
+    }
+
+    .body {
+      background-color: antiquewhite;
+    }
+
+    .container {
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .grid {
+      display: grid;
+      row-gap: 10px;
+      column-gap: 10px;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .card {
+      margin-left: 4px;
+      margin-right: 4px;
+      padding: 0.5em;
+      background-color: white;
+      width: 100%;
+    }
+
+    @media (min-width: 800px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .image {
+      float: left;
+      height: auto;
+      width: 128px;
+      margin-right: 6px;
+    }
+
+    .title {
+        font: bold;
+        margin-bottom: 8px;
+      }
+
+  </style>
+</head>
+
+<body class="body">
+  <div class="container">
+    <?php
+    $servername = "localhost";
+    $username = "dev";
+    $password = "Admin2024";
+    $dbname = "demo";
+
+    // Create connection
+    $conn = new mysqli($servername, $username, $password, $dbname);
+    // Check connection
+    if ($conn->connect_error) {
+      die("Connection failed: " . $conn->connect_error);
+    }
+
+    $sql = "SELECT id, author, title, amazon, image FROM book";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+      echo "<div class='grid'>";
+      // output data of each row
+      while ($row = $result->fetch_assoc()) {
+        echo "<div class='card'>"
+        . "<h4 class='title'>" .$row["title"] ."</h4>"
+        . "<h4 class='title'>" .$row["author"] ."</h4>"
+        . "<img src='https://d2cvlmmg8c0xrp.cloudfront.net/web-css/singapore.jpg' class='image' />"
+        . "<p>" . "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Officia officiis voluptates ab eum totam atque deleniti accusantium nulla illo provident et nesciunt, nisi laudantium iusto animi rem repudiandae, asperiores consequuntur Lorem ipsum dolor sit amet, consectetur adipisicing elit. Doloremque ipsam deserunt quaerat corrupti nihil error amet libero. Dignissimos, dolorem laudantium optio id, blanditiis eveniet repellendus pariatur neque facilis reprehenderit excepturi! Lorem ipsum dolor sit amet consectetur, adipisicing elit. Non repellendus, praesentium quasi quidem itaque numquam qui ex ducimus harum, perferendis officia deserunt libero magni assumenda mollitia aut ratione ipsam illo! Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime, corporis suscipit, natus odio nobis vel totam atque vitae porro animi in, cupiditate mollitia pariatur minus quos! Maiores assumenda explicabo expedita?" . "</p>"
+        . "</div>";
+      }
+      echo "</div>";
+    } else {
+      echo "0 results";
+    }
+    $conn->close();
+    ?>
+    <div>
+
+</body>
+
+</html>
