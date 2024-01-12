@@ -9,15 +9,47 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"text/template"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
-func main()  {
+type Book struct {
+	ID          uint
+	Title       string
+	Author      string
+	Amazon      string
+	Image       string
+	Description string
+}
+
+// const HOST = "database-1.c9y4mg20eppz.ap-southeast-1.rds.amazonaws.com"
+// const USER = "postgresql"
+// const PASS = "Admin2024"
+// const DBNAME = "demo"
+
+const HOST = "localhost"
+const USER = "postgres"
+const DBNAME = "dvdrental"
+const PASS = "Mike@865525"
+
+func main() {
+
+	// db init
+	dns := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v", HOST, "5432", USER, PASS, DBNAME)
+	db, _ := gorm.Open(postgres.Open(dns), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			NoLowerCase:   false,
+			SingularTable: true,
+		},
+	})
 
 	mux := http.NewServeMux()
 
@@ -31,40 +63,59 @@ func main()  {
 		http.ServeFile(w, r, "./static/book.html")
 	})
 
+	mux.HandleFunc("/postgresql", func(w http.ResponseWriter, r *http.Request) {
+
+		// query a list of book []Book
+		books := getBooks(db)
+
+		// load template
+		tmpl, error := template.ParseFiles("./static/book-template.html")
+
+		if error != nil {
+			fmt.Println(error)
+		}
+
+		// pass data to template and write to writer
+		tmpl.Execute(w, books)
+	})
+
 	// upload page
 	mux.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			http.ServeFile(w, r, "./static/upload.html")
 		case "POST":
-			uploadFile(w, r)
+			uploadFile(w, r, db)
 		}
 	})
 
 	// bedrock page
 	mux.HandleFunc("/bedrock-stream", bedrock)
 
-	// create web server 
+	// create web server
 	server := &http.Server{
-		Addr: ":3000",
-		Handler: mux,
-		ReadTimeout: 30* time.Second,
-		WriteTimeout: 30 * time.Second,
+		Addr:           ":3000",
+		Handler:        mux,
+		ReadTimeout:    30 * time.Second,
+		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
+	// static files
+	mux.Handle("/demo/", http.StripPrefix("/demo/", http.FileServer(http.Dir("./static"))))
+
 	// enable logging
 	log.Fatal(server.ListenAndServe())
-	
+
 }
 
 // promt format
 const claudePromptFormat = "\n\nHuman: %s\n\nAssistant:"
 
-// bedrock runtime client 
-var brc *bedrockruntime.Client 
+// bedrock runtime client
+var brc *bedrockruntime.Client
 
-// init bedorck credentials connecting to aws 
+// init bedorck credentials connecting to aws
 func init() {
 
 	region := os.Getenv("AWS_REGION")
@@ -80,13 +131,13 @@ func init() {
 	brc = bedrockruntime.NewFromConfig(cfg)
 }
 
-// bedrock handler request 
+// bedrock handler request
 func bedrock(w http.ResponseWriter, r *http.Request) {
 
 	var query Query
 	var message string
 
-	// parse mesage from request 
+	// parse mesage from request
 	error := json.NewDecoder(r.Body).Decode(&query)
 
 	if error != nil {
@@ -101,7 +152,7 @@ func bedrock(w http.ResponseWriter, r *http.Request) {
 	prompt := "" + fmt.Sprintf(claudePromptFormat, message)
 
 	payload := Request{
-		Prompt: prompt,
+		Prompt:            prompt,
 		MaxTokensToSample: 2048,
 	}
 
@@ -115,8 +166,8 @@ func bedrock(w http.ResponseWriter, r *http.Request) {
 	output, error := brc.InvokeModelWithResponseStream(
 		context.Background(),
 		&bedrockruntime.InvokeModelWithResponseStreamInput{
-			Body: payloadBytes,
-			ModelId: aws.String("anthropic.claude-v2"),
+			Body:        payloadBytes,
+			ModelId:     aws.String("anthropic.claude-v2"),
 			ContentType: aws.String("application/json"),
 		},
 	)
@@ -144,9 +195,9 @@ func bedrock(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, resp.Completion)
 			if f, ok := w.(http.Flusher); ok {
 				f.Flush()
-			 } else {
-				fmt.Println("Damn, no flush");
-			 }
+			} else {
+				fmt.Println("Damn, no flush")
+			}
 
 		case *types.UnknownUnionMember:
 			fmt.Println("unknown tag:", v.Tag)
@@ -157,12 +208,12 @@ func bedrock(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// stream bedorck response to web client 
-func SendStream(message string) (string, error)  {
+// stream bedorck response to web client
+func SendStream(message string) (string, error) {
 	prompt := "" + fmt.Sprintf(claudePromptFormat, message)
 
 	payload := Request{
-		Prompt: prompt,
+		Prompt:            prompt,
 		MaxTokensToSample: 2048,
 	}
 
@@ -175,8 +226,8 @@ func SendStream(message string) (string, error)  {
 	output, error := brc.InvokeModelWithResponseStream(
 		context.Background(),
 		&bedrockruntime.InvokeModelWithResponseStreamInput{
-			Body: payloadBytes,
-			ModelId: aws.String("anthropic.claude-v2"),
+			Body:        payloadBytes,
+			ModelId:     aws.String("anthropic.claude-v2"),
 			ContentType: aws.String("application/json"),
 		},
 	)
@@ -206,22 +257,57 @@ func SendStream(message string) (string, error)  {
 			fmt.Println("union is nil or unknown type")
 		}
 	}
-	
+
 	return "", error
 }
 
-// server handle uploaded file 
-func uploadFile(w http.ResponseWriter, r *http.Request)  {
+// // server handle uploaded file
+// func uploadFile(w http.ResponseWriter, r *http.Request)  {
+
+// 	// maximum upload file of 10 MB files
+// 	r.ParseMultipartForm(10 << 20)
+
+// 	// Get handler for filename, size and heanders
+// 	file, handler, error := r.FormFile("myFile")
+// 	if error != nil {
+// 		fmt.Println("Error")
+// 		fmt.Println(error)
+// 		return
+// 	}
+
+// 	defer file.Close()
+// 	fmt.Printf("upload file %v\n", handler.Filename)
+// 	fmt.Printf("file size %v\n", handler.Size)
+// 	fmt.Printf("MIME header %v\n", handler.Header)
+
+// 	// Create file
+// 	dest, error := os.Create(handler.Filename)
+// 	if error != nil {
+// 		return
+// 	}
+// 	defer dest.Close()
+
+// 	// Copy uploaded file to dest
+// 	if _, err := io.Copy(dest, file); err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	fmt.Fprintf(w, "Successfully Uploaded File\n")
+
+// }
+
+func uploadFile(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 
 	// maximum upload file of 10 MB files
-	r.ParseMultipartForm(10 << 20)	
+	r.ParseMultipartForm(10 << 20)
 
 	// Get handler for filename, size and heanders
 	file, handler, error := r.FormFile("myFile")
 	if error != nil {
 		fmt.Println("Error")
 		fmt.Println(error)
-		return 
+		return
 	}
 
 	defer file.Close()
@@ -229,23 +315,53 @@ func uploadFile(w http.ResponseWriter, r *http.Request)  {
 	fmt.Printf("file size %v\n", handler.Size)
 	fmt.Printf("MIME header %v\n", handler.Header)
 
-	// Create file 
-	dest, error := os.Create(handler.Filename)
+	// upload file to s3
+	// _, error = s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
+	// 	Bucket: aws.String("cdk-entest-videos"),
+	// 	Key:    aws.String("golang/" + handler.Filename),
+	// 	Body:   file,
+	// })
+
+	// if error != nil {
+	// 	fmt.Println("error upload s3")
+	// }
+
+	// Create file
+	dest, error := os.Create("./static/" + handler.Filename)
 	if error != nil {
-		return 
+		return
 	}
 	defer dest.Close()
 
-	// Copy uploaded file to dest 
+	// Copy uploaded file to dest
 	if _, err := io.Copy(dest, file); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// create a record in database
+	db.Create(&Book{
+		Title:       "Database Internals",
+		Author:      "Hai Tran",
+		Description: "Hello",
+		Image:       handler.Filename,
+	})
+
 	fmt.Fprintf(w, "Successfully Uploaded File\n")
 
 }
 
+func getBooks(db *gorm.DB) []Book {
+	var books []Book
+
+	db.Limit(10).Find(&books)
+
+	for _, book := range books {
+		fmt.Println(book.Title)
+	}
+
+	return books
+}
 
 type Request struct {
 	Prompt            string   `json:"prompt"`
@@ -260,7 +376,7 @@ type Response struct {
 	Completion string `json:"completion"`
 }
 
-type HelloHandler struct {}
+type HelloHandler struct{}
 
 type Query struct {
 	Topic string `json:"topic"`
