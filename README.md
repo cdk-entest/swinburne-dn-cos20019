@@ -125,6 +125,40 @@ go mod tidy
 go run main.go
 ```
 
+## PostgreSQL
+
+Let connect to a postgresql. Default username could be postgres or postgresql.
+
+```bash
+psql -h $HOST -p 5432 -U postgres -d demo
+```
+
+Create a database and table
+
+```sql
+create database demo;
+\c demo;
+```
+
+Create a book table
+
+```sql
+CREATE TABLE IF NOT EXISTS book (
+  id serial PRIMARY KEY,
+  author TEXT,
+  title TEXT,
+  amazon TEXT,
+  image TEXT
+);
+```
+
+Insert data into table
+
+```sql
+INSERT INTO book (author, title, amazon, image)
+values ('Hai Tran', 'Deep Learning', '', 'dog.jpg') RETURNING id;
+```
+
 ## PostgreSQL and GORM
 
 Create a database connection
