@@ -125,6 +125,95 @@ go mod tidy
 go run main.go
 ```
 
+## PostgreSQL and GORM
+
+Create a database connection
+
+```go
+const HOST = "localhost"
+const USER = "postgres"
+const DBNAME = "dvdrental"
+const PASS = "Mike@865525"
+
+dns := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v", HOST, "5432", USER, PASS, DBNAME)
+	db, _ := gorm.Open(postgres.Open(dns), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			NoLowerCase:   false,
+			SingularTable: true,
+		},
+	})
+
+mux.HandleFunc("/postgresql", func(w http.ResponseWriter, r *http.Request) {
+
+		// query a list of book []Book
+		books := getBooks(db)
+
+		// load template
+		tmpl, error := template.ParseFiles("./static/book-template.html")
+
+		if error != nil {
+			fmt.Println(error)
+		}
+
+		// pass data to template and write to writer
+		tmpl.Execute(w, books)
+	})
+```
+
+Query database using an Object Relation Model (ORM) such as GORM
+
+```go
+func getBooks(db *gorm.DB) []Book {
+	var books []Book
+
+	db.Limit(10).Find(&books)
+
+	for _, book := range books {
+		fmt.Println(book.Title)
+	}
+
+	return books
+}
+```
+
+Pass books to frontend template
+
+```html
+<div class="grid">
+  {{range $book:= .}}
+  <div class="card">
+    <h4 class="title">{{ $book.Image}}</h4>
+    <h4 class="title">{{ $book.Author }}</h4>
+    <img src="/demo/{{ $book.Image }}" alt="book-image" class="image" />
+    <p>
+      Lorem ipsum dolor sit amet consectetur, adipisicing elit. Rem quaerat quas
+      corrupti cum blanditiis, sint non officiis minus molestiae culpa
+      consectetur ex voluptatibus distinctio ipsam. Possimus sint voluptatum at
+      modi! Lorem ipsum, dolor sit amet consectetur adipisicing elit. Alias
+      dolore soluta error adipisci eius pariatur laborum sed impedit. Placeat
+      minus aut perspiciatis dolor veniam, dolores odio sint eveniet? Numquam,
+      tenetur! Lorem ipsum dolor sit amet consectetur adipisicing elit. Earum
+      suscipit porro animi! Ducimus maiores et non. Minima nostrum ipsa voluptas
+      assumenda consequuntur dicta reprehenderit numquam similique, nesciunt
+      officiis facere optio. {{ $book.Description}}
+    </p>
+  </div>
+  {{end}}
+</div>
+```
+
+Upload a file and create a record in the database
+
+```go
+// create a record in database
+	db.Create(&Book{
+		Title:       "Database Internals",
+		Author:      "Hai Tran",
+		Description: "Hello",
+		Image:       handler.Filename,
+	})
+```
+
 ## Reference
 
 - [golang http doc](https://go.dev/src/net/http/doc.go)

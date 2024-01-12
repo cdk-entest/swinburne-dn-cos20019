@@ -21,6 +21,18 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// aws rds
+// const HOST = "database-1.c9y4mg20eppz.ap-southeast-1.rds.amazonaws.com"
+// const USER = "postgresql"
+// const PASS = "Admin2024"
+// const DBNAME = "demo"
+
+// local db
+const HOST = "localhost"
+const USER = "postgres"
+const DBNAME = "dvdrental"
+const PASS = "Mike@865525"
+
 type Book struct {
 	ID          uint
 	Title       string
@@ -29,16 +41,6 @@ type Book struct {
 	Image       string
 	Description string
 }
-
-// const HOST = "database-1.c9y4mg20eppz.ap-southeast-1.rds.amazonaws.com"
-// const USER = "postgresql"
-// const PASS = "Admin2024"
-// const DBNAME = "demo"
-
-const HOST = "localhost"
-const USER = "postgres"
-const DBNAME = "dvdrental"
-const PASS = "Mike@865525"
 
 func main() {
 
@@ -106,6 +108,72 @@ func main() {
 
 	// enable logging
 	log.Fatal(server.ListenAndServe())
+
+}
+
+func getBooks(db *gorm.DB) []Book {
+	var books []Book
+
+	db.Limit(10).Find(&books)
+
+	for _, book := range books {
+		fmt.Println(book.Title)
+	}
+
+	return books
+}
+
+func uploadFile(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
+
+	// maximum upload file of 10 MB files
+	r.ParseMultipartForm(10 << 20)
+
+	// Get handler for filename, size and heanders
+	file, handler, error := r.FormFile("myFile")
+	if error != nil {
+		fmt.Println("Error")
+		fmt.Println(error)
+		return
+	}
+
+	defer file.Close()
+	fmt.Printf("upload file %v\n", handler.Filename)
+	fmt.Printf("file size %v\n", handler.Size)
+	fmt.Printf("MIME header %v\n", handler.Header)
+
+	// upload file to s3
+	// _, error = s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
+	// 	Bucket: aws.String("cdk-entest-videos"),
+	// 	Key:    aws.String("golang/" + handler.Filename),
+	// 	Body:   file,
+	// })
+
+	// if error != nil {
+	// 	fmt.Println("error upload s3")
+	// }
+
+	// Create file
+	dest, error := os.Create("./static/" + handler.Filename)
+	if error != nil {
+		return
+	}
+	defer dest.Close()
+
+	// Copy uploaded file to dest
+	if _, err := io.Copy(dest, file); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// create a record in database
+	db.Create(&Book{
+		Title:       "Database Internals",
+		Author:      "Hai Tran",
+		Description: "Hello",
+		Image:       handler.Filename,
+	})
+
+	fmt.Fprintf(w, "Successfully Uploaded File\n")
 
 }
 
@@ -206,161 +274,6 @@ func bedrock(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("union is nil or unknown type")
 		}
 	}
-}
-
-// stream bedorck response to web client
-func SendStream(message string) (string, error) {
-	prompt := "" + fmt.Sprintf(claudePromptFormat, message)
-
-	payload := Request{
-		Prompt:            prompt,
-		MaxTokensToSample: 2048,
-	}
-
-	payloadBytes, error := json.Marshal(payload)
-
-	if error != nil {
-		return "", error
-	}
-
-	output, error := brc.InvokeModelWithResponseStream(
-		context.Background(),
-		&bedrockruntime.InvokeModelWithResponseStreamInput{
-			Body:        payloadBytes,
-			ModelId:     aws.String("anthropic.claude-v2"),
-			ContentType: aws.String("application/json"),
-		},
-	)
-
-	if error != nil {
-		return "", error
-	}
-
-	for event := range output.GetStream().Events() {
-		switch v := event.(type) {
-		case *types.ResponseStreamMemberChunk:
-
-			//fmt.Println("payload", string(v.Value.Bytes))
-
-			var resp Response
-			err := json.NewDecoder(bytes.NewReader(v.Value.Bytes)).Decode(&resp)
-			if err != nil {
-				return "", err
-			}
-
-			fmt.Println(resp.Completion)
-
-		case *types.UnknownUnionMember:
-			fmt.Println("unknown tag:", v.Tag)
-
-		default:
-			fmt.Println("union is nil or unknown type")
-		}
-	}
-
-	return "", error
-}
-
-// // server handle uploaded file
-// func uploadFile(w http.ResponseWriter, r *http.Request)  {
-
-// 	// maximum upload file of 10 MB files
-// 	r.ParseMultipartForm(10 << 20)
-
-// 	// Get handler for filename, size and heanders
-// 	file, handler, error := r.FormFile("myFile")
-// 	if error != nil {
-// 		fmt.Println("Error")
-// 		fmt.Println(error)
-// 		return
-// 	}
-
-// 	defer file.Close()
-// 	fmt.Printf("upload file %v\n", handler.Filename)
-// 	fmt.Printf("file size %v\n", handler.Size)
-// 	fmt.Printf("MIME header %v\n", handler.Header)
-
-// 	// Create file
-// 	dest, error := os.Create(handler.Filename)
-// 	if error != nil {
-// 		return
-// 	}
-// 	defer dest.Close()
-
-// 	// Copy uploaded file to dest
-// 	if _, err := io.Copy(dest, file); err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	fmt.Fprintf(w, "Successfully Uploaded File\n")
-
-// }
-
-func uploadFile(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
-
-	// maximum upload file of 10 MB files
-	r.ParseMultipartForm(10 << 20)
-
-	// Get handler for filename, size and heanders
-	file, handler, error := r.FormFile("myFile")
-	if error != nil {
-		fmt.Println("Error")
-		fmt.Println(error)
-		return
-	}
-
-	defer file.Close()
-	fmt.Printf("upload file %v\n", handler.Filename)
-	fmt.Printf("file size %v\n", handler.Size)
-	fmt.Printf("MIME header %v\n", handler.Header)
-
-	// upload file to s3
-	// _, error = s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
-	// 	Bucket: aws.String("cdk-entest-videos"),
-	// 	Key:    aws.String("golang/" + handler.Filename),
-	// 	Body:   file,
-	// })
-
-	// if error != nil {
-	// 	fmt.Println("error upload s3")
-	// }
-
-	// Create file
-	dest, error := os.Create("./static/" + handler.Filename)
-	if error != nil {
-		return
-	}
-	defer dest.Close()
-
-	// Copy uploaded file to dest
-	if _, err := io.Copy(dest, file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// create a record in database
-	db.Create(&Book{
-		Title:       "Database Internals",
-		Author:      "Hai Tran",
-		Description: "Hello",
-		Image:       handler.Filename,
-	})
-
-	fmt.Fprintf(w, "Successfully Uploaded File\n")
-
-}
-
-func getBooks(db *gorm.DB) []Book {
-	var books []Book
-
-	db.Limit(10).Find(&books)
-
-	for _, book := range books {
-		fmt.Println(book.Title)
-	}
-
-	return books
 }
 
 type Request struct {
