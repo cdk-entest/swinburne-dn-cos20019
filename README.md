@@ -10,7 +10,23 @@ date: 2024-01-05
 
 [GitHub](https://github.com/cdk-entest/swinburne-dn-cos20019/tree/php) Let install PHP and MariaDB
 
-Let install PHP and MariaDB
+Here is basic UserData for getting started
+
+```bash
+#!/bin/bash
+# install php and mariadb
+sudo dnf update -y
+sudo dnf install -y httpd wget php-fpm php-mysqli php-json php php-devel
+sudo dnf install mariadb105-server
+# download code
+wget https://github.com/cdk-entest/swinburne-dn-cos20019/archive/php.zip
+unzip php.zip
+cd swinburne-dn-cos20019-php/
+# run the webserver
+php -S localhost:3000
+```
+
+First, let install PHP and MariaDB.
 
 ```bash
 sudo dnf update -y
