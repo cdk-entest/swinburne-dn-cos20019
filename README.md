@@ -1104,7 +1104,19 @@ The full page with style here
 - Save file to server
 - Create a record in database
 
-Let create a form for uploading files
+Let create a form for uploading files. It is just a simple form doing a POST request to ./handle-upload.php
+
+```html
+<form enctype="multipart/form-data" action="./handle-upload.php" method="post">
+  <input type="file" name="myFile" />
+  <input type="submit" value="upload" />
+</form>
+```
+
+Here is the full detail
+
+<details>
+  <summary>upload.php</summary>
 
 ```php
 <html>
@@ -1145,7 +1157,39 @@ Let create a form for uploading files
 </html>
 ```
 
-Let create a php file to handle to upload file
+</details>
+
+Let create a php file to handle to upload file. Let create the logic for parse the uploaded filename, save file to server, and create a record in database
+
+```php
+ $servername = "localhost";
+ $username = "dev";
+ $password = "Admin2024";
+ $dbname = "demo";
+
+ // Create connection
+ $conn = new mysqli($servername, $username, $password, $dbname);
+ // Check connection
+ if ($conn->connect_error) {
+     die("Connection failed: " . $conn->connect_error);
+ }
+
+ // uploaded file name
+ $filename = $_FILES['myFile']['name'];
+
+ // save uploaded file
+ move_uploaded_file($_FILES['myFile']['tmp_name'], "./static/" . basename($filename));
+
+ // create a record in database
+ $sql = "INSERT INTO book(author, title, amazon, image) VALUES ('Hai Tran', 'Deep Learning', '', '$filename')";
+ $result = $conn->query($sql);
+
+```
+
+Here is the full detail
+
+<details>
+  <summary>handler-upload.php</summary>
 
 ```php
 <html>
@@ -1212,6 +1256,8 @@ Let create a php file to handle to upload file
 
 </html>
 ```
+
+</details>
 
 ## Basic MySQL
 
