@@ -14,7 +14,7 @@ Let install PHP and MariaDB
 
 ```bash
 sudo dnf update -y
-sudo dnf install -y httpd wget php-fpm php-mysqli php-json php php-develA
+sudo dnf install -y httpd wget php-fpm php-mysqli php-json php php-devel
 sudo dnf install mariadb105-server
 ```
 
