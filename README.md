@@ -826,6 +826,12 @@ Connect to mariadb
 mysql -h localhost -P 3306 -u <mymasteruser> -p
 ```
 
+For example
+
+```bash
+mysql -h localhost -P 3306 -u dev -p
+```
+
 Test
 
 ```bash
