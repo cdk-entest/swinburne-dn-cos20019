@@ -1,10 +1,14 @@
 ---
 title: getting started with php on ec2
+description: getting started with php and mariadb
 author: haimtran
-date: 12/01/2024
+publishedDate: 01/05/2024
+date: 2024-01-05
 ---
 
 ## Setup LAMP
+
+[GitHub](https://github.com/cdk-entest/swinburne-dn-cos20019/tree/php) Let install PHP and MariaDB
 
 Let install PHP and MariaDB
 
