@@ -1209,68 +1209,100 @@ Here is the full detail
 
 ```php
 <html>
-
-<head>
-
+  <head>
     <style>
-        :root {
-            box-sizing: border-box;
-        }
+      :root {
+        box-sizing: border-box;
+      }
 
-        *,
-        ::before,
-        ::after {
-            box-sizing: inherit;
-        }
+      body {
+        background-color: antiquewhite;
+      }
 
-        .body {
-            background-color: antiquewhite;
-        }
+      .container {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
 
-        .container {
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+      .input-upload {
+        width: 350px;
+        max-width: 100%;
+        color: #444;
+        padding: 5px;
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #555;
+      }
+
+      .input-upload::-webkit-file-upload-button {
+        margin-right: 20px;
+        border: none;
+        background: #084cdf;
+        padding: 10px 20px;
+        border-radius: 10px;
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.2s ease-in-out;
+      }
+
+      .input-submit {
+        background-color: #084cdf;
+        color: white;
+        border: none;
+        padding: 10px 30px;
+        border-radius: 10px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      .drop-container {
+        position: relative;
+        display: flex;
+        gap: 10px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        height: 200px;
+        border: 2px dashed #555;
+        color: #444;
+        cursor: pointer;
+        transition: background 0.2s ease-in-out, border 0.2s ease-in-out;
+      }
+      .drop-container:hover {
+        background: #eee;
+        border-color: #111;
+      }
+
+      .drop-container:hover .drop-title {
+        color: #222;
+      }
+
+      .drop-title {
+        color: #444;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        transition: color 0.2s ease-in-out;
+      }
     </style>
-
-</head>
-
-<body class="body">
+  </head>
+  <body>
     <div class="container">
-
-        <?php
-
-        $servername = "localhost";
-        $username = "dev";
-        $password = "Admin2024";
-        $dbname = "demo";
-
-        // Create connection
-        $conn = new mysqli($servername, $username, $password, $dbname);
-        // Check connection
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
-
-        // uploaded file name
-        $filename = $_FILES['myFile']['name'];
-
-        // save uploaded file
-        move_uploaded_file($_FILES['myFile']['tmp_name'], "./static/" . basename($filename));
-
-        // create a record in database
-        $sql = "INSERT INTO book(author, title, amazon, image) VALUES ('Hai Tran', 'Deep Learning', '', '$filename')";
-        $result = $conn->query($sql);
-
-        // response to browser
-        echo "<h1> Sucessfully upload file $filename </h1>"
-        ?>
-
+      <div>
+        <form enctype="multipart/form-data" action="./handle-upload.php" method="post">
+          <label for="file" class="drop-container" id="dropcontainer">
+            <input type="file" class="input-upload" id="file" name="myFile"/>
+          </label>
+          <input type="submit" class="input-submit" />
+        </form>
+      </div>
     </div>
-</body>
-
+  </body>
+  <script></script>
 </html>
+
 ```
 
 </details>
