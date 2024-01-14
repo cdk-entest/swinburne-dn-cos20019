@@ -1094,6 +1094,145 @@ The full page with style here
 
 </details>
 
+## PHP Upload
+
+- Form to upload file
+- Save file to server
+- Create a record in database
+
+Let create a form for uploading files
+
+```php
+<html>
+
+<head>
+    <style>
+        :root {
+            box-sizing: border-box;
+        }
+
+        *,
+        ::before,
+        ::after {
+            box-sizing: inherit;
+        }
+
+        .body {
+            background-color: antiquewhite;
+        }
+
+        .container {
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+
+<body class="body">
+    <div class="container">
+        <form enctype="multipart/form-data" action="./handle-upload.php" method="post">
+            <input type="file" name="myFile" />
+            <input type="submit" value="upload" />
+        </form>
+    </div>
+</body>
+
+</html>
+```
+
+Let create a php file to handle to upload file
+
+```php
+<html>
+
+<head>
+
+    <style>
+        :root {
+            box-sizing: border-box;
+        }
+
+        *,
+        ::before,
+        ::after {
+            box-sizing: inherit;
+        }
+
+        .body {
+            background-color: antiquewhite;
+        }
+
+        .container {
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+
+</head>
+
+<body class="body">
+    <div class="container">
+
+        <?php
+
+        $servername = "localhost";
+        $username = "dev";
+        $password = "Admin2024";
+        $dbname = "demo";
+
+        // Create connection
+        $conn = new mysqli($servername, $username, $password, $dbname);
+        // Check connection
+        if ($conn->connect_error) {
+            die("Connection failed: " . $conn->connect_error);
+        }
+
+        // uploaded file name
+        $filename = $_FILES['myFile']['name'];
+
+        // save uploaded file
+        move_uploaded_file($_FILES['myFile']['tmp_name'], "./static/" . basename($filename));
+
+        // create a record in database
+        $sql = "INSERT INTO book(author, title, amazon, image) VALUES ('Hai Tran', 'Deep Learning', '', '$filename')";
+        $result = $conn->query($sql);
+
+        // response to browser
+        echo "<h1> Sucessfully upload file $filename </h1>"
+        ?>
+
+    </div>
+</body>
+
+</html>
+```
+
+## Basic MySQL
+
+Let update a row
+
+```sql
+UPDATE book
+SET image = "golang-idiomatic.jpg"
+WHERE id = 2;
+```
+
+Insert a row
+
+```sql
+INSERT INTO book(author, title, amazon, image)
+VALUES ('Hai Tran', 'Deep Learning', '', 'hello.jpg');
+```
+
+Delete a row
+
+```sql
+DELETE FROM book
+WHERE id = 1;
+```
+
 ## Referece
 
 - [LAMP server on AL2023](https://docs.aws.amazon.com/linux/al2023/ug/ec2-lamp-amazon-linux-2023.html)

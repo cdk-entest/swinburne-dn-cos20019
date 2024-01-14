@@ -83,7 +83,7 @@
         echo "<div class='card'>" 
         . "<h4 class='title'>" .$row["title"] ."</h4>"
         . "<h4 class='title'>" .$row["author"] ."</h4>"
-        . "<img src='https://d2cvlmmg8c0xrp.cloudfront.net/web-css/singapore.jpg' class='image' />" 
+        . "<img src= /static/".$row["image"] ." class='image' />"
         . "<p>" . "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Officia officiis voluptates ab eum totam atque deleniti accusantium nulla illo provident et nesciunt, nisi laudantium iusto animi rem repudiandae, asperiores consequuntur Lorem ipsum dolor sit amet, consectetur adipisicing elit. Doloremque ipsam deserunt quaerat corrupti nihil error amet libero. Dignissimos, dolorem laudantium optio id, blanditiis eveniet repellendus pariatur neque facilis reprehenderit excepturi! Lorem ipsum dolor sit amet consectetur, adipisicing elit. Non repellendus, praesentium quasi quidem itaque numquam qui ex ducimus harum, perferendis officia deserunt libero magni assumenda mollitia aut ratione ipsam illo! Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime, corporis suscipit, natus odio nobis vel totam atque vitae porro animi in, cupiditate mollitia pariatur minus quos! Maiores assumenda explicabo expedita?" . "</p>"
         . "</div>";
       }
