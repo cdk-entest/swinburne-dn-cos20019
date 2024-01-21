@@ -60,7 +60,7 @@ sudo systemctl is-enabled httpd
 ## Photo Upload Page
 
 > [!IMPORTANT]
-> Le change the ownership of /var/www/html directory so ec2-user can write to it
+> Let change the ownership of /var/www/html directory so ec2-user can write to it
 
 ```bash
 sudo shown -R /var/www/html ec2-user:ec2-user
