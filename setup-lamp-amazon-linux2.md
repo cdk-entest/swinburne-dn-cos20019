@@ -55,6 +55,7 @@ yes | sudo yum install -y httpd
 sudo systemctl start httpd
 sudo systemctl enable httpd
 sudo systemctl is-enabled httpd
+sudo chown -R ec2-user:ec2-user /var/www/html
 ```
 
 ## Photo Upload Page
@@ -63,7 +64,7 @@ sudo systemctl is-enabled httpd
 > Let change the ownership of /var/www/html directory so ec2-user can write to it
 
 ```bash
-sudo shown -R /var/www/html ec2-user:ec2-user
+sudo chown -R ec2-user:ec2-user /var/www/html
 ```
 
 Then create the photo upload lage
