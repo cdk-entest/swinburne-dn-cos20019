@@ -6,9 +6,10 @@ date: 26/01/2024
 
 ## Setup LAMP
 
-[GitHub](https://github.com/cdk-entest/swinburne-dn-cos20019/tree/php) Let install PHP and MariaDB
+> [!IMPORTANT]
+> This script is for Amazon Linux 2!
 
-Here is basic UserData for getting started
+Let install PHP and MariaDB. Here is basic UserData for getting started
 
 ```bash
 #!/bin/bash
