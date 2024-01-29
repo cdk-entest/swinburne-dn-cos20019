@@ -4,82 +4,58 @@ author: haimtran
 date: 26/01/2024
 ---
 
-## Setup LAMP
+## Setup LAMP Stack
 
-> [!IMPORTANT]
-> This script is for Amazon Linux 2!
+Let setup LAMP stack for Amazon Linux 2.
 
-Let install PHP and MariaDB. Here is basic UserData for getting started
+- Option 1. Step by step install [HERE](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-lamp-amazon-linux-2.html)
+- Option 2. UserData
 
-```bash
-#!/bin/bash
-# install php and mariadb
-sudo dnf update -y
-sudo dnf install -y httpd wget php-fpm php-mysqli php-json php php-devel
-sudo dnf install mariadb105-server
-# download code
-wget https://github.com/cdk-entest/swinburne-dn-cos20019/archive/php.zip
-unzip php.zip
-cd swinburne-dn-cos20019-php/
-# run the webserver
-php -S localhost:3000
-```
-
-First, let install PHP and MariaDB.
+Let update
 
 ```bash
-sudo dnf update -y
-sudo dnf install -y httpd wget php-fpm php-mysqli php-json php php-devel
-sudo dnf install mariadb105-server
+sudo yum update -y
 ```
 
-Start the apache web server
+Install mariadb
+
+```bash
+sudo amazon-linux-extras install mariadb10.5
+```
+
+Install php
+
+```bash
+sudo amazon-linux-extras install php8.2
+```
+
+Install http server
+
+```bash
+sudo yum install -y httpd
+```
+
+Enable http service
 
 ```bash
 sudo systemctl start httpd
-```
-
-Enable the httpd service
-
-```bash
+sudo systemctl enable httpd
 sudo systemctl is-enabled httpd
 ```
 
-Change folder /var/www/html permissions
+Check the result by open the EC2 public IP address on browser, please ensure SecurityGroup open port 80 for 0/0. Finally here is full UserData
 
-```bash
-sudo usermod -a -G apache ec2-user
-exit
-groups
-```
-
-Change permissions
-
-```bash
-sudo chown -R ec2-user:apache /var/www
-sudo chmod 2775 /var/www && find /var/www -type d -exec sudo chmod 2775 {} \;
-find /var/www -type f -exec sudo chmod 0664 {} \;
-```
-
-Create a index.php in /var/www/html/index.php
-
-```php
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHP - Hello, World!</title>
-</head>
-<body>
-        <h1>Hello, World!</h1>
-</body>
-```
-
-Run the php web server
-
-```bash
-php -S 0.0.0.0:3000
+```sh
+#!/bin/bash
+sudo su ec2-user
+sudo yum update -y
+yes | sudo amazon-linux-extras install mariadb10.5
+yes | sudo amazon-linux-extras install php8.2
+yes | sudo yum install -y httpd
+sudo systemctl start httpd
+sudo systemctl enable httpd
+sudo systemctl is-enabled httpd
+sudo chown -R ec2-user:ec2-user /var/www/html
 ```
 
 ## Install MariaDB
@@ -216,15 +192,15 @@ INSERT INTO book(author, title, amazon, image) VALUES ('Hai Tran', 'Deep Learnin
 Create an user with password
 
 ```sql
-CREATE USER IF NOT EXISTS 'dev'@'localhost' IDENTIFIED by 'Admin2024';
-GRANT ALL PRIVILEGES ON * . * TO 'dev'@'localhost';
+CREATE USER IF NOT EXISTS dev IDENTIFIED by 'Admin2024';
+GRANT ALL PRIVILEGES ON * . * TO dev;
 FLUSH PRIVILEGES;
 ```
 
 Or granta access to only demo database
 
 ```sql
-GRANT ALL PRIVILEGES on 'demo'.*to 'dev'@'localhost';
+GRANT ALL PRIVILEGES on demo . * to dev;
 ```
 
 Remote connect
