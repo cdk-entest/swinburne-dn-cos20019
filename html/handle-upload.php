@@ -47,16 +47,19 @@
         $filename = $_FILES['myFile']['name'];
 
         // save uploaded file 
-        move_uploaded_file($_FILES['myFile']['tmp_name'], "./static/" . basename($filename));
+        move_uploaded_file($_FILES['myFile']['tmp_name'], "./../static/" . basename($filename));
 
         // create a record in database 
         $sql = "INSERT INTO book(author, title, amazon, image) VALUES ('Hai Tran', 'Deep Learning', '', '$filename')";
         $result = $conn->query($sql);
 
         // response to browser 
-        echo "<h1> Sucessfully upload file $filename </h1>"
-        ?>
+        echo "<h1> Sucessfully upload file $filename </h1>";
 
+        // close conn 
+        $conn->close();
+        ?>
+        
     </div>
 </body>
 

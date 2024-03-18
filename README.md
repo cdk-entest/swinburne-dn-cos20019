@@ -1358,6 +1358,14 @@ DELETE FROM book
 WHERE id = 1;
 ```
 
+## Troubleshooting
+
+```bash
+sudo fuser -k 80/tcp
+sudo fuser -k 443/tcp
+sudo service nginx restart
+```
+
 ## Referece
 
 - [LAMP server on AL2023](https://docs.aws.amazon.com/linux/al2023/ug/ec2-lamp-amazon-linux-2023.html)
@@ -1369,3 +1377,5 @@ WHERE id = 1;
 - [MariaDB connecting](https://mariadb.com/kb/en/connecting-to-mariadb/)
 
 - [MariaDB insert docs](https://mariadb.com/kb/en/insert/)
+
+- [How nginx process a request](https://nginx.org/en/docs/http/request_processing.html)
