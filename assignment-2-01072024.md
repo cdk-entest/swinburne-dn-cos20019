@@ -4,6 +4,10 @@ author: haitran
 date: 01/07/2204
 ---
 
+[![thumbnail](./assets/assignment-2-thumbnail-1.png)](https://d2cvlmmg8c0xrp.cloudfront.net/swinburne/assignment-2-demo.mp4)
+
+[Video Link](https://d2cvlmmg8c0xrp.cloudfront.net/swinburne/assignment-2-demo.mp4)
+
 ## Step 1. Read Requirements
 
 - Read requirements and rubric
