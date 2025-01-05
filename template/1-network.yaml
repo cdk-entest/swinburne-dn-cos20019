@@ -1,0 +1,452 @@
+AWSTemplateFormatVersion: "2010-09-09"
+#------------------------------------------------------
+# Mappings
+#------------------------------------------------------
+Mappings:
+  CidrMappings:
+    public-subnet-1:
+      CIDR: 10.0.0.0/24
+    public-subnet-2:
+      CIDR: 10.0.2.0/24
+    public-subnet-3:
+      CIDR: 10.0.4.0/24
+    private-subnet-1:
+      CIDR: 10.0.1.0/24
+    private-subnet-2:
+      CIDR: 10.0.3.0/24
+    private-subnet-3:
+      CIDR: 10.0.5.0/24
+#------------------------------------------------------
+# Parameters
+#------------------------------------------------------
+Parameters:
+  CidrBlock:
+    Type: String
+    Description: CidrBlock
+    Default: 10.0.0.0/16
+  InternetCidrBlock:
+    Type: String
+    Description: UserCidrBlock
+    Default: 0.0.0.0/0
+#------------------------------------------------------
+# Resources: VPC, Subnets, NAT, Routes
+#------------------------------------------------------
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W60
+            reason: VPC flow logs not required for this example
+    Properties:
+      CidrBlock: !Ref CidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-vpc
+  #------------------------------------------------------
+  # Resources: internet gateway
+  #------------------------------------------------------
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-ig
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  #------------------------------------------------------
+  # Resources: public and private subnets
+  #------------------------------------------------------
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: false
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs:
+              Ref: AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock:
+        Fn::FindInMap:
+          - CidrMappings
+          - public-subnet-1
+          - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-public-subnet-1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: false
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs:
+              Ref: AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock:
+        Fn::FindInMap:
+          - CidrMappings
+          - public-subnet-2
+          - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-public-subnet-2
+
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: false
+      AvailabilityZone:
+        Fn::Select:
+          - 2
+          - Fn::GetAZs:
+              Ref: AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock:
+        Fn::FindInMap:
+          - CidrMappings
+          - public-subnet-3
+          - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-public-subnet-3
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: false
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs:
+              Ref: AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock:
+        Fn::FindInMap:
+          - CidrMappings
+          - private-subnet-1
+          - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-private-subnet-1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: false
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs:
+              Ref: AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock:
+        Fn::FindInMap:
+          - CidrMappings
+          - private-subnet-2
+          - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-private-subnet-2
+
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: false
+      AvailabilityZone:
+        Fn::Select:
+          - 2
+          - Fn::GetAZs:
+              Ref: AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock:
+        Fn::FindInMap:
+          - CidrMappings
+          - private-subnet-3
+          - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-private-subnet-3
+  #------------------------------------------------------
+  # Resources: nat gateway
+  #------------------------------------------------------
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt: [NatGatewayEIP, AllocationId]
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-nat-gateway
+
+  #------------------------------------------------------
+  # Resources: public route table
+  #------------------------------------------------------
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-public-rt
+
+  RouteInternetGateway:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: !Ref InternetCidrBlock
+      GatewayId: !Ref InternetGateway
+
+  #------------------------------------------------------
+  # Resources: private route table
+  #------------------------------------------------------
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-private-rt
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: !Ref InternetCidrBlock
+      NatGatewayId: !Ref NatGateway
+
+  #------------------------------------------------------
+  # Resources: route table subnet associations
+  #------------------------------------------------------
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet3
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet3
+      RouteTableId: !Ref PrivateRouteTable
+  #------------------------------------------------------
+  # WebServerSecurityGroup:
+  #------------------------------------------------------
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W5
+            reason: return traffic to user from internet for testing
+          - id: W40
+            reason: egress open all port for the internet
+    Properties:
+      GroupDescription: web server security group
+      VpcId: !Ref VPC
+
+  WebServerSecurityGroupIngressHTTP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: open port 80 for web server
+      GroupId: !Ref WebServerSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: !Ref InternetCidrBlock
+
+  WebServerSecurityGroupIngressSSH:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: open port 22 for web server
+      GroupId: !Ref WebServerSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref InternetCidrBlock
+
+  WebServerSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Egress for environment
+      GroupId: !Ref WebServerSecurityGroup
+      IpProtocol: -1
+      FromPort: -1
+      ToPort: -1
+      CidrIp: !Ref InternetCidrBlock
+
+  #------------------------------------------------------
+  # LoadBalancerSecurityGroup:
+  #------------------------------------------------------
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W5
+            reason: return traffic to user from internet for testing
+          - id: W40
+            reason: egress open all port for the internet
+    Properties:
+      GroupDescription: load balancer security group
+      VpcId: !Ref VPC
+
+  LoadBalancerSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Egress for environment
+      GroupId: !Ref LoadBalancerSecurityGroup
+      IpProtocol: -1
+      FromPort: -1
+      ToPort: -1
+      DestinationSecurityGroupId: !Ref WebServerSecurityGroup
+
+  LoadBalancerSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: open port 80 for web server
+      GroupId: !Ref LoadBalancerSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: !Ref InternetCidrBlock
+
+  #------------------------------------------------------
+  # DatabaseSecurityGroupIngress:
+  #------------------------------------------------------
+  # DatabaseSecurityGroup:
+  #------------------------------------------------------
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W5
+            reason: return traffic to user from internet for testing
+          - id: W40
+            reason: egress open all port for the internet
+    Properties:
+      GroupDescription: database security group
+      VpcId: !Ref VPC
+
+  DatabaseSecurityGroupPostgreSQLIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: open port 5432 for web server
+      GroupId: !Ref DatabaseSecurityGroup
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref WebServerSecurityGroup
+      SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+
+  DatabaseSecurityGroupMySQLIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: open port 3306 for web server
+      GroupId: !Ref DatabaseSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourceSecurityGroupId: !Ref WebServerSecurityGroup
+      SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+
+  DatabaseSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Egress for environment
+      GroupId: !Ref DatabaseSecurityGroup
+      IpProtocol: -1
+      FromPort: -1
+      ToPort: -1
+      CidrIp: !Ref InternetCidrBlock
+#------------------------------------------------------
+# Export:
+#------------------------------------------------------
+Outputs:
+  VPC:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${AWS::StackName}-vpc
+  PublicSubnet1:
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub ${AWS::StackName}-public-subnet-1
+  PublicSubnet2:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}-public-subnet-2
+  PublicSubnet3:
+    Value: !Ref PublicSubnet3
+    Export:
+      Name: !Sub ${AWS::StackName}-public-subnet-3
+  PrivateSubnet1:
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}-private-subnet-1
+  PrivateSubnet2:
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}-private-subnet-2
+  PrivateSubnet3:
+    Value: !Ref PrivateSubnet3
+    Export:
+      Name: !Sub ${AWS::StackName}-private-subnet-3
+  PrivateRouteTable:
+    Value: !Ref PrivateRouteTable
+    Export:
+      Name: !Sub ${AWS::StackName}-private-route-table
+  InternetGateway:
+    Value: !Ref InternetGateway
+    Export:
+      Name: !Sub ${AWS::StackName}-igw
+  DatabaseSecurityGroup:
+    Value: !Ref DatabaseSecurityGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-database-security-group
+  WebServerSecurityGroup:
+    Value: !Ref WebServerSecurityGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-web-server-security-group

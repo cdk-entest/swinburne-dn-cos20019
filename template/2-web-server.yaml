@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: "2010-09-09"
+#------------------------------------------------------
+# Parameters
+#------------------------------------------------------
+Parameters:
+  NetworkStackName:
+    Description: Stack name of the network stack
+    Type: String
+    Default: network-stack
+  InstanceProfileName:
+    Description: Instance profile for the EC2 instance
+    Type: String
+    Default: "LabInstanceProfile"
+  InstanceKeyName:
+    Description: Instance profile for the EC2 instance
+    Type: String
+    Default: "cos20019-2025-hai"
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.small
+    ConstraintDescription: must be a valid EC2 instance type.
+  LatestAmiId:
+    Description: should be amazon linux 2 in ap-southeast-1
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+#------------------------------------------------------
+# EC2 Instance for VSCode Server
+#------------------------------------------------------
+Resources:
+  IMDSv2LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: IMDSV2
+      LaunchTemplateData:
+        MetadataOptions:
+          HttpEndpoint: enabled
+          HttpPutResponseHopLimit: 1
+          HttpTokens: required
+  WebServer:
+    Type: AWS::EC2::Instance
+    DependsOn: IMDSv2LaunchTemplate
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W40
+            reason: allow tcp 8080 from the cloudfront prefix list
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      LaunchTemplate:
+        LaunchTemplateName: IMDSV2
+        Version: 1
+      IamInstanceProfile: !Ref InstanceProfileName
+      KeyName: !Ref InstanceKeyName
+      Tags:
+        - Key: Name
+          Value: WebServer
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          AssociatePublicIpAddress: "true"
+          SubnetId:
+            Fn::ImportValue: !Sub ${NetworkStackName}-public-subnet-1
+          GroupSet:
+            - Fn::ImportValue: !Sub ${NetworkStackName}-web-server-security-group
+      Monitoring: true
+      UserData:
+        Fn::Base64:
+          Fn::Sub:
+            - |
+              #!/bin/bash
+              echo "${Name}"
+              yum update -y
+              amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
+              service httpd start
+              yum install -y httpd mariadb-server php-mbstring php-xml
+              sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 10M/g" /etc/php.ini
+              systemctl start httpd
+              systemctl enable httpd
+              usermod -a -G apache ec2-user
+              chown -R ec2-user:apache /var/www
+              chmod 2775 /var/www
+              find /var/www -type d -exec sudo chmod 2775 {} \;
+              find /var/www -type f -exec sudo chmod 0664 {} \;
+              echo "<?php echo '<h2>Welcome to COS80001. Installed PHP version ' . phpversion() . '</h2>'; ?>" > /var/www/html/phpinfo.php
+            - Name: !Ref InstanceKeyName
